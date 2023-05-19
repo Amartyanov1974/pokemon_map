@@ -1,11 +1,10 @@
 import folium
-import json
 
-from django.http import HttpResponseNotFound
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.utils.timezone import localtime
 
 from pokemon_entities.models import (Pokemon, PokemonEntity)
+from pogomap.settings import MEDIA_URL
 
 
 MOSCOW_CENTER = [55.751244, 37.618423]
@@ -29,7 +28,6 @@ def add_pokemon(folium_map, lat, lon, image_url=DEFAULT_IMAGE_URL):
 
 
 def show_all_pokemons(request):
-    pokemons = Pokemon.objects.all()
     now_time = localtime()
     pokemon_entities = PokemonEntity.objects.filter(disappeared_at__gte=now_time,
                                                     appeared_at__lte=now_time)
@@ -39,13 +37,14 @@ def show_all_pokemons(request):
         add_pokemon(
             folium_map, pokemon_entity.lat,
             pokemon_entity.lon,
-            request.build_absolute_uri('/media/{}'.format(pokemon.image))
+            request.build_absolute_uri(f'{MEDIA_URL}{pokemon.image}')
         )
     pokemons_on_page = []
+    pokemons = Pokemon.objects.all()
     for pokemon in pokemons:
         pokemons_on_page.append({
             'pokemon_id': pokemon.id,
-            'img_url': request.build_absolute_uri('/media/{}'.format(pokemon.image)),
+            'img_url': request.build_absolute_uri(f'{MEDIA_URL}{pokemon.image}'),
             'title_ru': pokemon.title,
         })
 
@@ -57,17 +56,10 @@ def show_all_pokemons(request):
 
 def show_pokemon(request, pokemon_id):
     pokemons = Pokemon.objects.all()
-    now_time = localtime()
-    for pokemon in pokemons:
-        if pokemon.id == int(pokemon_id):
-            requested_pokemon = pokemon
-            break
-    else:
-        return HttpResponseNotFound('<h1>Такой покемон не найден</h1>')
-    pokemon_entities = PokemonEntity.objects.filter(pokemon=requested_pokemon)
+    pokemon = get_object_or_404(pokemons, id=int(pokemon_id))
+    pokemon_entities = PokemonEntity.objects.filter(pokemon=pokemon)
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
-    pokemon_url = request.build_absolute_uri('/media/{}'.format(pokemon.image))
-
+    pokemon_url = request.build_absolute_uri(f'{MEDIA_URL}{pokemon.image}')
     for pokemon_entity in pokemon_entities:
         add_pokemon(
             folium_map, pokemon_entity.lat,
@@ -76,27 +68,25 @@ def show_pokemon(request, pokemon_id):
         )
     previous_evolution = None
     if pokemon.previous_evolution:
-        previous_pokemon = pokemon.previous_evolution;
-        previous_pokemon_url = request.build_absolute_uri('/media/{}'.format(previous_pokemon.image))
+        previous_pokemon = pokemon.previous_evolution
+        loc_url = f'{MEDIA_URL}{previous_pokemon.image}'
+        previous_pokemon_url = request.build_absolute_uri(loc_url)
         previous_evolution = {'title_ru': previous_pokemon.title,
                'pokemon_id': previous_pokemon.id,
                'img_url': previous_pokemon_url,
                'description': previous_pokemon.description,
                'title_en': previous_pokemon.title_en,
                'title_jp': previous_pokemon.title_jp}
-    try:
-        next_pokemon = pokemon.next_evolution.get();
-    except:
-        next_pokemon = None
-    next_evolution = None
-    if next_pokemon:
-        next_pokemon_url = request.build_absolute_uri('/media/{}'.format(next_pokemon.image))
-        next_evolution = {'title_ru': next_pokemon.title,
-               'pokemon_id': next_pokemon.id,
+    next_evolutions = pokemon.next_evolutions.first();
+    if next_evolutions:
+        loc_url = f'{MEDIA_URL}{next_evolutions.image}'
+        next_pokemon_url = request.build_absolute_uri(loc_url)
+        next_evolutions = {'title_ru': next_evolutions.title,
+               'pokemon_id': next_evolutions.id,
                'img_url': next_pokemon_url,
-               'description': next_pokemon.description,
-               'title_en': next_pokemon.title_en,
-               'title_jp': next_pokemon.title_jp}
+               'description': next_evolutions.description,
+               'title_en': next_evolutions.title_en,
+               'title_jp': next_evolutions.title_jp}
 
     pokemon = {'title_ru': pokemon.title,
                'pokemon_id': pokemon.id,
@@ -105,7 +95,7 @@ def show_pokemon(request, pokemon_id):
                'title_en': pokemon.title_en,
                'title_jp': pokemon.title_jp,
                 'previous_evolution': previous_evolution,
-                'next_evolution': next_evolution}
+                'next_evolution': next_evolutions}
     return render(request, 'pokemon.html', context={
         'map': folium_map._repr_html_(), 'pokemon': pokemon
     })
