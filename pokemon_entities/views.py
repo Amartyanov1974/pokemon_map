@@ -72,21 +72,21 @@ def show_pokemon(request, pokemon_id):
         loc_url = f'{MEDIA_URL}{previous_pokemon.image}'
         previous_pokemon_url = request.build_absolute_uri(loc_url)
         previous_evolution = {'title_ru': previous_pokemon.title,
-               'pokemon_id': previous_pokemon.id,
-               'img_url': previous_pokemon_url,
-               'description': previous_pokemon.description,
-               'title_en': previous_pokemon.title_en,
-               'title_jp': previous_pokemon.title_jp}
-    next_evolutions = pokemon.next_evolutions.first();
-    if next_evolutions:
-        loc_url = f'{MEDIA_URL}{next_evolutions.image}'
+                              'pokemon_id': previous_pokemon.id,
+                              'img_url': previous_pokemon_url,
+                              'description': previous_pokemon.description,
+                              'title_en': previous_pokemon.title_en,
+                              'title_jp': previous_pokemon.title_jp}
+    next_evolution = pokemon.next_evolutions.first()
+    if next_evolution:
+        loc_url = f'{MEDIA_URL}{next_evolution.image}'
         next_pokemon_url = request.build_absolute_uri(loc_url)
-        next_evolutions = {'title_ru': next_evolutions.title,
-               'pokemon_id': next_evolutions.id,
-               'img_url': next_pokemon_url,
-               'description': next_evolutions.description,
-               'title_en': next_evolutions.title_en,
-               'title_jp': next_evolutions.title_jp}
+        next_evolution = {'title_ru': next_evolution.title,
+                          'pokemon_id': next_evolution.id,
+                          'img_url': next_pokemon_url,
+                          'description': next_evolution.description,
+                          'title_en': next_evolution.title_en,
+                          'title_jp': next_evolution.title_jp}
 
     pokemon = {'title_ru': pokemon.title,
                'pokemon_id': pokemon.id,
@@ -94,8 +94,8 @@ def show_pokemon(request, pokemon_id):
                'description': pokemon.description,
                'title_en': pokemon.title_en,
                'title_jp': pokemon.title_jp,
-                'previous_evolution': previous_evolution,
-                'next_evolution': next_evolutions}
+               'previous_evolution': previous_evolution,
+               'next_evolution': next_evolution}
     return render(request, 'pokemon.html', context={
         'map': folium_map._repr_html_(), 'pokemon': pokemon
     })
