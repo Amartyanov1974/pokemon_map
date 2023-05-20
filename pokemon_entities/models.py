@@ -13,16 +13,16 @@ class Pokemon(models.Model):
                                            blank=True, null=True,
                                            verbose_name='Предыдущая эволюция',
                                            related_name='next_evolutions')
-    description = models.TextField('Описание',blank=True, null=True)
+    description = models.TextField('Описание', blank=True, null=True)
 
     def __str__(self):
-        return f'{self.title}'
+        return self.title
 
 
 class PokemonEntity(models.Model):
     pokemon = models.ForeignKey(Pokemon, verbose_name='Покемон',
                                 on_delete=models.CASCADE,
-                                related_name='entity')
+                                related_name='entities')
     lat = models.FloatField('Широта', blank=True, null=True)
     lon = models.FloatField('Долгота', blank=True, null=True)
     appeared_at = models.DateTimeField('Появится в', blank=True, null=True)
